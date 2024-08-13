@@ -40,20 +40,20 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
     public function render($mode, Doku_Renderer $renderer, $data) {
         if ($mode != 'xhtml') return false;
 
-        $renderer->doc .= '<div class="infobox" style="border: 1px solid #aaa; background-color: #333; color: #eee; width: 300px; float: right; margin: 0 0 1em 1em; padding: 0.5em; font-size: 95%; line-height: 1.5em;">';
+        $renderer->doc .= '<div class="infobox">';
         
         if (isset($data['name'])) {
-            $renderer->doc .= '<div class="infobox-title" style="font-size: 120%; font-weight: bold; margin-bottom: 0.5em; color: #fff;">' . $this->_parseWikiText($data['name']) . '</div>';
+            $renderer->doc .= '<div class="infobox-title">' . $this->_parseWikiText($data['name']) . '</div>';
         }
         
         if (isset($data['image'])) {
-            $renderer->doc .= '<div class="infobox-image" style="text-align: center; margin-bottom: 0.5em;"><img src="' . ml($data['image']) . '" alt="' . hsc($data['name']) . '" style="max-width: 100%; height: auto;"></div>';
+            $renderer->doc .= '<div class="infobox-image"><img src="' . ml($data['image']) . '" alt="' . hsc($data['name']) . '"></div>';
         }
         
-        $renderer->doc .= '<table class="infobox-table" style="width: 100%; border-spacing: 0;">';
+        $renderer->doc .= '<table class="infobox-table">';
         foreach ($data as $key => $value) {
             if ($key != 'name' && $key != 'image') {
-                $renderer->doc .= '<tr><th style="text-align: left; vertical-align: top; padding-right: 0.5em; font-weight: bold; color: #fff;">' . hsc($key) . '</th><td style="vertical-align: top; color: #ccc;">' . $this->_parseWikiText($value) . '</td></tr>';
+                $renderer->doc .= '<tr><th>' . hsc($key) . '</th><td>' . $this->_parseWikiText($value) . '</td></tr>';
             }
         }
         $renderer->doc .= '</table>';
