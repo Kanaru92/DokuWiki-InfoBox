@@ -1,7 +1,5 @@
 .infobox {
-    border: 1px solid #aaa;
-    background-color: #333;
-    color: #eee;
+    border: 1px solid;
     width: 300px;
     float: right;
     margin: 0 0 1em 1em;
@@ -14,7 +12,6 @@
     font-size: 120%;
     font-weight: bold;
     margin-bottom: 0.5em;
-    color: #fff;
     text-align: center;
 }
 
@@ -36,16 +33,11 @@
 .infobox-table th,
 .infobox-table td {
     padding: 3px;
-    border-bottom: 1px solid #555;
+    border-bottom: 1px solid;
 }
 
 .infobox-table th {
     text-align: left;
     font-weight: bold;
-    color: #fff;
     width: 40%;
-}
-
-.infobox-table td {
-    color: #ccc;
 }
