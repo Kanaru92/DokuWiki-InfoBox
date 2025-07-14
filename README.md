@@ -84,3 +84,38 @@ Syntax Reference
 * Collapsed section: === Section Name ===
 * Custom CSS: class = custom-style
 * Lists in values: Use wiki list syntax
+
+Image Tab Customization
+----------------
+Provide custom captions to make tabs clearer:
+```markdown
+image1 = photo.jpg|Main Photo
+image2 = diagram.jpg|Technical Diagram
+```
+
+Add custom CSS to your theme:
+```markdown
+/* Option 1: Bordered tabs */
+.infobox-tab {
+    background: rgba(128, 128, 128, 0.1) !important;
+    border: 1px solid rgba(128, 128, 128, 0.3) !important;
+}
+
+/* Option 2: Pill-style tabs */
+.infobox-tab {
+    border-radius: 4px !important;
+    margin: 2px !important;
+    background: rgba(128, 128, 128, 0.1) !important;
+}
+
+/* Option 3: Traditional tab style */
+.infobox-tab {
+    border: 1px solid !important;
+    border-bottom: none !important;
+    background: rgba(128, 128, 128, 0.05) !important;
+}
+.infobox-tab.active {
+    background: inherit !important;
+    font-weight: bold !important;
+}
+```
