@@ -20,112 +20,189 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
     }
 
     public function connectTo($mode) {
-        $this->Lexer->addSpecialPattern('\{\{infobox>.*?\}\}', $mode, 'plugin_infobox');
+        $this->Lexer->addEntryPattern('\{\{infobox>', $mode, 'plugin_infobox');
+    }
+    
+    public function postConnect() {
+        $this->Lexer->addExitPattern('\}\}', 'plugin_infobox');
     }
 
     public function handle($match, $state, $pos, Doku_Handler $handler) {
-        $data = substr($match, 10, -2);
-        $lines = explode("\n", $data);
-        
-        $params = [
-            'fields' => [],
-            'images' => [],
-            'sections' => [],
-            'collapsed_sections' => []
-        ];
-        
-        $currentSection = null;
-        $imageIndex = 0;
-        
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if (empty($line)) continue;
-            
-            // Check for section headers (lines starting with ==)
-            if (preg_match('/^(={2,3})\s*(.+?)\s*\1$/', $line, $matches)) {
-                $currentSection = $matches[2];
-                $params['sections'][$currentSection] = [];
-                // Three equals means collapsed by default
-                if ($matches[1] === '===') {
-                    $params['collapsed_sections'][$currentSection] = true;
-                }
-                continue;
-            }
-            
-            // Check for image definitions (image=, image1=, image2=, etc.)
-            if (preg_match('/^image(\d*)\s*=\s*(.+)$/', $line, $matches)) {
-                $imgNum = $matches[1] ?: '1';
-                $imgData = trim($matches[2]);
+        switch ($state) {
+            case DOKU_LEXER_ENTER:
+                return array('state' => 'enter');
                 
-                // Check if image has a caption (format: filename|caption)
-                if (strpos($imgData, '|') !== false) {
-                    list($imgPath, $caption) = explode('|', $imgData, 2);
-                    $params['images'][$imgNum] = [
-                        'path' => trim($imgPath),
-                        'caption' => trim($caption)
-                    ];
-                } else {
-                    $params['images'][$imgNum] = [
-                        'path' => $imgData,
-                        'caption' => ''
-                    ];
-                }
-                continue;
-            }
-            
-            // Regular key=value pairs
-            if (strpos($line, '=') !== false) {
-                list($key, $value) = explode('=', $line, 2);
-                $key = trim($key);
-                $value = trim($value);
+            case DOKU_LEXER_UNMATCHED:
+                // This contains the actual content between {{infobox> and }}
+                $lines = explode("\n", $match);
                 
-                // Skip empty values unless explicitly showing them
-                if (empty($value) && $value !== '0') {
-                    continue;
-                }
+                $params = [
+                    'fields' => [],
+                    'images' => [],
+                    'sections' => [],
+                    'collapsed_sections' => []
+                ];
                 
-                // Special handling for image field without number
-                if ($key === 'image') {
-                    // Check if image has a caption (format: filename|caption)
-                    if (strpos($value, '|') !== false) {
-                        list($imgPath, $caption) = explode('|', $value, 2);
-                        $params['images']['1'] = [
-                            'path' => trim($imgPath),
-                            'caption' => trim($caption)
-                        ];
-                    } else {
-                        $params['images']['1'] = [
-                            'path' => $value,
-                            'caption' => ''
-                        ];
+                $currentSection = null;
+                $currentSubgroup = null;
+                $imageIndex = 0;
+                $currentKey = null;
+                $currentValue = '';
+                
+                foreach ($lines as $line) {
+                    // Don't trim the line yet - we need to preserve indentation for multi-line values
+                    
+                    // Check if we're currently capturing a multi-line value
+                    if ($currentKey !== null) {
+                        // Continue capturing multi-line value
+                        $currentValue .= "\n" . $line;
+                        
+                        // Check if all plugin syntaxes are closed
+                        if (substr_count($currentValue, '{{') === substr_count($currentValue, '}}')) {
+                            $this->_saveField($params, $currentKey, trim($currentValue), $currentSection, $currentSubgroup);
+                            $currentKey = null;
+                            $currentValue = '';
+                        }
+                        continue;
                     }
-                } elseif ($key === 'name' || $key === 'title') {
-                    $params['name'] = $value;
-                } elseif ($key === 'header_image') {
-                    $params['header_image'] = $value;
-                } else {
-                    // Add to current section or main fields
-                    if ($currentSection !== null) {
-                        $params['sections'][$currentSection][$key] = $value;
-                    } else {
-                        $params['fields'][$key] = $value;
+                    
+                    $trimmedLine = trim($line);
+                    if (empty($trimmedLine)) continue;
+                    
+                    // Check for section headers
+                    if (preg_match('/^(={2,3})\s*(.+?)\s*\1$/', $trimmedLine, $sectionMatches)) {
+                        $currentSection = $sectionMatches[2];
+                        $currentSubgroup = null; // Reset subgroup when entering new section
+                        $params['sections'][$currentSection] = [];
+                        if ($sectionMatches[1] === '===') {
+                            $params['collapsed_sections'][$currentSection] = true;
+                        }
+                        continue;
+                    }
+                    
+                    // Check for subgroup headers (:::)
+                    if (preg_match('/^:::\s*(.+?)\s*:::$/', $trimmedLine, $subgroupMatches)) {
+                        if ($currentSection !== null) {
+                            $currentSubgroup = $subgroupMatches[1];
+                            if (!isset($params['sections'][$currentSection]['_subgroups'])) {
+                                $params['sections'][$currentSection]['_subgroups'] = [];
+                            }
+                            $params['sections'][$currentSection]['_subgroups'][$currentSubgroup] = [];
+                        }
+                        continue;
+                    }
+                    
+                    // Check if this line contains a key=value pair
+                    if (strpos($trimmedLine, '=') !== false) {
+                        // Split only on the first = to handle values containing =
+                        $pos = strpos($trimmedLine, '=');
+                        $key = trim(substr($trimmedLine, 0, $pos));
+                        $value = trim(substr($trimmedLine, $pos + 1));
+                        
+                        // Check if value contains unclosed plugin syntax
+                        $openCount = substr_count($value, '{{');
+                        $closeCount = substr_count($value, '}}');
+                        
+                        if ($openCount > $closeCount) {
+                            // Value contains unclosed plugin syntax, start multi-line capture
+                            $currentKey = $key;
+                            $currentValue = $value;
+                        } else {
+                            // Value is complete on this line
+                            $this->_saveField($params, $key, $value, $currentSection, $currentSubgroup);
+                        }
                     }
                 }
-            }
+                
+                // Save any remaining multi-line value
+                if ($currentKey !== null) {
+                    $this->_saveField($params, $currentKey, trim($currentValue), $currentSection, $currentSubgroup);
+                }
+                
+                return array('state' => 'content', 'params' => $params);
+                
+            case DOKU_LEXER_EXIT:
+                return array('state' => 'exit');
         }
         
-        return $params;
+        return false;
+    }
+    
+    private function _saveField(&$params, $key, $value, $currentSection, $currentSubgroup = null) {
+        // Skip empty values unless explicitly showing them
+        if (empty($value) && $value !== '0') {
+            return;
+        }
+        
+        // Handle image fields
+        if (preg_match('/^image(\d*)$/', $key, $matches)) {
+            $imgNum = $matches[1] ?: '1';
+            // Check if image has a caption (format: filename|caption)
+            if (strpos($value, '|') !== false) {
+                list($imgPath, $caption) = explode('|', $value, 2);
+                $params['images'][$imgNum] = [
+                    'path' => trim($imgPath),
+                    'caption' => trim($caption)
+                ];
+            } else {
+                $params['images'][$imgNum] = [
+                    'path' => trim($value),
+                    'caption' => ''
+                ];
+            }
+        } elseif ($key === 'name' || $key === 'title') {
+            $params['name'] = $value;
+        } elseif ($key === 'header_image') {
+            $params['header_image'] = $value;
+        } elseif ($key === 'class') {
+            $params['class'] = $value;
+        } else {
+            // Add to current section/subgroup or main fields
+            if ($currentSection !== null) {
+                if ($currentSubgroup !== null) {
+                    // Add to subgroup
+                    $params['sections'][$currentSection]['_subgroups'][$currentSubgroup][$key] = $value;
+                } else {
+                    // Add to section (not in a subgroup)
+                    $params['sections'][$currentSection][$key] = $value;
+                }
+            } else {
+                // Add to main fields
+                $params['fields'][$key] = $value;
+            }
+        }
     }
 
     public function render($mode, Doku_Renderer $renderer, $data) {
         if ($mode != 'xhtml') return false;
         
+        if (!is_array($data) || !isset($data['state'])) return false;
+        
+        switch ($data['state']) {
+            case 'enter':
+                // Start of infobox - nothing to do
+                break;
+                
+            case 'content':
+                // Render the actual infobox
+                $params = $data['params'];
+                $this->_renderInfobox($renderer, $params);
+                break;
+                
+            case 'exit':
+                // End of infobox - nothing to do
+                break;
+        }
+        
+        return true;
+    }
+    
+    private function _renderInfobox($renderer, $data) {
         // Generate unique ID for this infobox
         $boxId = 'infobox_' . md5(serialize($data));
         
         // Allow custom CSS classes
-        $customClass = isset($data['fields']['class']) ? ' ' . hsc($data['fields']['class']) : '';
-        unset($data['fields']['class']);
+        $customClass = isset($data['class']) ? ' ' . hsc($data['class']) : '';
         
         $renderer->doc .= '<div class="infobox' . $customClass . '" id="' . $boxId . '" role="complementary" aria-label="Information box">';
         
@@ -216,7 +293,7 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
         }
         
         // Sections
-        foreach ($data['sections'] as $sectionName => $sectionFields) {
+        foreach ($data['sections'] as $sectionName => $sectionData) {
             $sectionId = $boxId . '_section_' . md5($sectionName);
             $isCollapsed = isset($data['collapsed_sections'][$sectionName]);
             $collapsibleClass = $isCollapsed ? ' collapsible collapsed' : '';
@@ -237,9 +314,39 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
             $contentClass = $isCollapsed ? 'infobox-section-content collapsed' : 'infobox-section-content';
             $renderer->doc .= '<div class="' . $contentClass . '" id="' . $sectionId . '">';
             
-            if (!empty($sectionFields)) {
+            // Check if this section has subgroups
+            $hasSubgroups = isset($sectionData['_subgroups']) && !empty($sectionData['_subgroups']);
+            
+            if ($hasSubgroups) {
+                // Render subgroups
+                $renderer->doc .= '<div class="infobox-subgroups">';
+                foreach ($sectionData['_subgroups'] as $subgroupName => $subgroupFields) {
+                    $renderer->doc .= '<div class="infobox-subgroup">';
+                    $renderer->doc .= '<div class="infobox-subgroup-header">' . hsc($subgroupName) . '</div>';
+                    
+                    if (!empty($subgroupFields)) {
+                        $renderer->doc .= '<table class="infobox-table">';
+                        foreach ($subgroupFields as $key => $value) {
+                            $renderer->doc .= '<tr>';
+                            $renderer->doc .= '<th>' . hsc($this->_formatKey($key)) . '</th>';
+                            $renderer->doc .= '<td>' . $this->_parseWikiText($value) . '</td>';
+                            $renderer->doc .= '</tr>';
+                        }
+                        $renderer->doc .= '</table>';
+                    }
+                    $renderer->doc .= '</div>';
+                }
+                $renderer->doc .= '</div>';
+            }
+            
+            // Render regular section fields (not in subgroups)
+            $regularFields = array_filter($sectionData, function($key) {
+                return $key !== '_subgroups';
+            }, ARRAY_FILTER_USE_KEY);
+            
+            if (!empty($regularFields)) {
                 $renderer->doc .= '<table class="infobox-table">';
-                foreach ($sectionFields as $key => $value) {
+                foreach ($regularFields as $key => $value) {
                     $renderer->doc .= '<tr>';
                     $renderer->doc .= '<th>' . hsc($this->_formatKey($key)) . '</th>';
                     $renderer->doc .= '<td>' . $this->_parseWikiText($value) . '</td>';
@@ -247,6 +354,7 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                 }
                 $renderer->doc .= '</table>';
             }
+            
             $renderer->doc .= '</div>';
             $renderer->doc .= '</div>';
         }

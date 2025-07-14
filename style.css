@@ -242,6 +242,57 @@
     max-height: 0;
 }
 
+/* Subgroups within sections */
+.infobox-subgroups {
+    display: flex;
+    gap: 0;
+    margin: 0;
+    border-top: 1px solid;
+}
+
+.infobox-subgroup {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.infobox-subgroup-header {
+    font-weight: bold;
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 95%;
+    border-bottom: 1px solid;
+    background: rgba(128, 128, 128, 0.05);
+}
+
+.infobox-subgroup .infobox-table {
+    margin: 0;
+    flex: 1;
+}
+
+.infobox-subgroup .infobox-table th,
+.infobox-subgroup .infobox-table td {
+    padding: 4px 8px;
+    font-size: 90%;
+}
+
+/* Vertical separator between subgroups */
+.infobox-subgroup:not(:last-child) {
+    border-right: 1px solid;
+}
+
+/* Ensure equal height for subgroup tables */
+.infobox-subgroups {
+    align-items: stretch;
+}
+
+/* When section has both subgroups and regular fields */
+.infobox-subgroups + .infobox-table {
+    margin-top: 0;
+    border-top: 1px solid;
+}
+
 /* Lists in table cells */
 .infobox-table td ul,
 .infobox-table td ol {
@@ -285,6 +336,17 @@
         padding: 3px 5px;
         font-size: 95%;
     }
+    
+    /* Stack subgroups vertically on mobile */
+    .infobox-subgroups {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .infobox-subgroup:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid;
+    }
 }
 
 /* Print styles */
@@ -310,6 +372,11 @@
     
     .infobox-section-content.collapsed {
         max-height: none;
+    }
+    
+    /* Print subgroups side by side if space allows */
+    .infobox-subgroups {
+        display: flex;
     }
 }
 
@@ -361,6 +428,11 @@
 
 [dir="rtl"] .infobox-tab:first-child {
     border-left: none;
+}
+
+[dir="rtl"] .infobox-subgroup:not(:last-child) {
+    border-right: none;
+    border-left: 1px solid;
 }
 
 /* Fix for DokuWiki section headers with infoboxes */
