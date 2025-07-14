@@ -1,4 +1,4 @@
-
+<img width="414" height="1016" alt="image" src="https://github.com/user-attachments/assets/6f8cfb1b-d4c3-4a39-ad96-7222a4846742" />
 # DokuWiki Infobox Plugin
 
 A flexible infobox plugin for DokuWiki that creates structured information boxes for any type of content.
@@ -74,6 +74,44 @@ Field 1 = Text 1
 Field 2 = Text 2
 }}
 ```
+
+With Struct Plugin
+------------------
+```markdown
+{{infobox>
+name = {{$project.name}}
+status = {{$project.status}}
+budget = {{$project.budget}}
+deadline = {{$project.deadline}}
+}}
+```
+
+With Subgroups within Sections
+------------------
+Use ::: to create side-by-side columns within any section:
+```markdown
+{{infobox>
+name = Name
+image1 = example1.png|Image Tab 1
+image2 = example2.jpg|Image Tab 2
+image3 = example3.jpg|Image Tab 3
+Field 1 = Text 1
+Field 2 = Text 2
+
+== Timeline ==
+::: ← Previous :::
+Info 1 = [[Info 1]]
+Info 2 = [[Info 1]]
+
+::: → Next :::
+Info 1 = [[Info 1]]
+Info 2 = [[Info 1]]
+Info 3 = [[Info 1]]
+}}
+
+}}
+```
+
 
 Syntax Reference
 ----------------
