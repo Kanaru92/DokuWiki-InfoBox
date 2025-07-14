@@ -114,13 +114,14 @@ Info 3 = [[Info 1]]
 
 Syntax Reference
 ----------------
-* Single image: image = filename.jpg
-* Multiple images: image1 = file.jpg|Label
-* Header banner: header_image = banner.jpg
-* Section: == Section Name ==
-* Collapsed section: === Section Name ===
-* Subgroups: ::: Group Name :::
-* Custom CSS: class = custom-style
+* Single image: `image = filename.jpg`
+* Multiple images: `image1 = file.jpg|Label`
+* Header banner: `header_image = banner.jpg`
+* Section: `== Section Name ==`
+* Collapsed section: `=== Section Name ===`
+* Subgroups: `::: Group Name :::`
+* Custom CSS: class = `custom-style`
+* Icons in field names: `{{icon.png}} Field Name = Value`
 * Lists in values: Use wiki list syntax
 
 Image Tab Customization
