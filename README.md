@@ -1,4 +1,3 @@
-<img width="414" height="1016" alt="image" src="https://github.com/user-attachments/assets/6f8cfb1b-d4c3-4a39-ad96-7222a4846742" />
 # DokuWiki Infobox Plugin
 
 A flexible infobox plugin for DokuWiki that creates structured information boxes for any type of content.
