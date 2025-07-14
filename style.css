@@ -1,30 +1,180 @@
+/* DokuWiki Infobox Plugin - Theme-agnostic styles */
+
+/* Main container */
 .infobox {
     border: 1px solid;
-    width: 300px;
+    border-radius: 5px;
+    width: 320px;
     float: right;
     margin: 0 0 1em 1em;
-    padding: 0.5em;
-    font-size: 95%;
+    font-size: 88%;
     line-height: 1.5em;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    /* Ensure infobox stays above section lines */
+    position: relative;
+    z-index: 10;
+    background: inherit;
 }
 
+/* Fix for section header lines - create BFC (Block Formatting Context) */
+.dokuwiki .page:has(.infobox) h1,
+.dokuwiki .page:has(.infobox) h2,
+.dokuwiki .page:has(.infobox) h3,
+.dokuwiki .page:has(.infobox) h4,
+.dokuwiki .page:has(.infobox) h5,
+.dokuwiki .page:has(.infobox) h6 {
+    overflow: hidden;
+}
+
+/* Fallback for browsers without :has() support */
+.infobox ~ h1,
+.infobox ~ h2,
+.infobox ~ h3,
+.infobox ~ h4,
+.infobox ~ h5,
+.infobox ~ h6 {
+    overflow: hidden;
+}
+
+/* Additional fix: wrap content in BFC when infobox present */
+.dokuwiki .wrapper_has_infobox {
+    overflow: auto;
+}
+
+/* Fix for section header lines - universal solution */
+.dokuwiki .page.has-infobox h1,
+.dokuwiki .page.has-infobox h2,
+.dokuwiki .page.has-infobox h3,
+.dokuwiki .page.has-infobox h4,
+.dokuwiki .page.has-infobox h5,
+.dokuwiki .page.has-infobox h6 {
+    overflow: hidden;
+}
+
+/* Header image (spans full width) */
+.infobox-header-image {
+    width: 100%;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+.infobox-header-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Title */
 .infobox-title {
-    font-size: 120%;
+    font-size: 125%;
     font-weight: bold;
-    margin-bottom: 0.5em;
+    padding: 0.5em;
     text-align: center;
+    border-bottom: 1px solid;
 }
 
-.infobox-image {
-    text-align: center;
-    margin-bottom: 0.5em;
+/* Image section with tabs */
+.infobox-images {
+    background: inherit;
 }
 
-.infobox-image img {
+/* Image tabs - Simple high-contrast style */
+.infobox-image-tabs {
+    display: flex;
+    padding: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-bottom: 2px solid;
+}
+
+.infobox-tab {
+    flex: 1;
+    padding: 10px 12px;
+    min-height: 40px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid rgba(128, 128, 128, 0.2);
+    cursor: pointer;
+    font-size: 90%;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    position: relative;
+}
+
+.infobox-tab:last-child {
+    border-right: none;
+}
+
+.infobox-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.infobox-tab:hover {
+    background: rgba(128, 128, 128, 0.1);
+}
+
+.infobox-tab:hover::after {
+    background: rgba(128, 128, 128, 0.3);
+}
+
+.infobox-tab.active {
+    font-weight: bold;
+}
+
+.infobox-tab.active::after {
+    background: currentColor;
+    left: 0;
+    right: 0;
+    height: 4px;
+    bottom: -2px;
+}
+
+/* Tab numbering */
+.infobox-tab-number {
+    opacity: 0.7;
+    font-size: 85%;
+}
+
+/* Image container */
+.infobox-image-container {
+    display: none;
+    text-align: center;
+    padding: 10px;
+    border-bottom: 1px solid;
+}
+
+.infobox-image-container.active {
+    display: block;
+}
+
+.infobox-image-container img {
     max-width: 100%;
     height: auto;
+    max-height: 250px;
+    object-fit: contain;
 }
 
+.infobox-image-caption {
+    margin-top: 5px;
+    font-size: 90%;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+/* Info table */
 .infobox-table {
     width: 100%;
     border-collapse: collapse;
@@ -32,8 +182,14 @@
 
 .infobox-table th,
 .infobox-table td {
-    padding: 3px;
+    padding: 5px 10px;
     border-bottom: 1px solid;
+    vertical-align: top;
+}
+
+.infobox-table tr:last-child th,
+.infobox-table tr:last-child td {
+    border-bottom: none;
 }
 
 .infobox-table th {
@@ -41,3 +197,195 @@
     font-weight: bold;
     width: 40%;
 }
+
+/* Section headers */
+.infobox-section {
+    margin-top: 0;
+}
+
+.infobox-section-header {
+    padding: 8px 10px;
+    font-weight: bold;
+    font-size: 105%;
+    text-align: center;
+    margin: 0;
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    position: relative;
+}
+
+/* Collapsible sections */
+.infobox-section.collapsible .infobox-section-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.infobox-section.collapsible .infobox-section-header:hover {
+    opacity: 0.9;
+}
+
+.infobox-section-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 80%;
+}
+
+.infobox-section-content {
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.infobox-section-content.collapsed {
+    max-height: 0;
+}
+
+/* Lists in table cells */
+.infobox-table td ul,
+.infobox-table td ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.infobox-table td ul li,
+.infobox-table td ol li {
+    margin: 2px 0;
+}
+
+/* Nested infobox prevention */
+.infobox .infobox {
+    float: none;
+    margin: 0.5em 0;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+    .infobox {
+        float: none;
+        width: 100%;
+        margin: 1em 0;
+        max-width: 100%;
+    }
+    
+    .infobox-image-tabs {
+        flex-wrap: nowrap;
+        overflow-x: scroll;
+    }
+    
+    .infobox-tab {
+        flex: 0 0 auto;
+        min-width: 100px;
+        padding: 10px 16px;
+    }
+    
+    .infobox-table th,
+    .infobox-table td {
+        padding: 3px 5px;
+        font-size: 95%;
+    }
+}
+
+/* Print styles */
+@media print {
+    .infobox {
+        float: none;
+        page-break-inside: avoid;
+        margin: 1em 0;
+    }
+    
+    .infobox-image-tabs {
+        display: none;
+    }
+    
+    .infobox-image-container {
+        display: block !important;
+        page-break-inside: avoid;
+    }
+    
+    .infobox-section-toggle {
+        display: none;
+    }
+    
+    .infobox-section-content.collapsed {
+        max-height: none;
+    }
+}
+
+/* Accessibility improvements */
+.infobox-tab:focus,
+.infobox-section.collapsible .infobox-section-header:focus {
+    outline: 2px solid;
+    outline-offset: 2px;
+}
+
+/* Ensure tab visibility in all themes */
+@media (prefers-color-scheme: light) {
+    .infobox-image-tabs {
+        background: rgba(0, 0, 0, 0.02);
+    }
+    .infobox-tab {
+        color: inherit;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .infobox-image-tabs {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .infobox-tab {
+        color: inherit;
+    }
+}
+
+/* RTL language support */
+[dir="rtl"] .infobox {
+    float: left;
+    margin: 0 1em 1em 0;
+}
+
+[dir="rtl"] .infobox-table th {
+    text-align: right;
+}
+
+[dir="rtl"] .infobox-section-toggle {
+    right: auto;
+    left: 10px;
+}
+
+[dir="rtl"] .infobox-tab {
+    border-right: none;
+    border-left: 1px solid;
+}
+
+[dir="rtl"] .infobox-tab:first-child {
+    border-left: none;
+}
+
+/* Fix for DokuWiki section headers with infoboxes */
+/* This prevents the header underline from extending through the floated infobox */
+.dokuwiki h1:not(.nobreak),
+.dokuwiki h2:not(.nobreak),
+.dokuwiki h3:not(.nobreak),
+.dokuwiki h4:not(.nobreak),
+.dokuwiki h5:not(.nobreak) {
+    /* Creates a new block formatting context */
+    display: flow-root;
+}
+
+/* Fallback for older browsers */
+@supports not (display: flow-root) {
+    .dokuwiki h1:not(.nobreak),
+    .dokuwiki h2:not(.nobreak),
+    .dokuwiki h3:not(.nobreak),
+    .dokuwiki h4:not(.nobreak),
+    .dokuwiki h5:not(.nobreak) {
+        overflow: hidden;
+    }
+}
+
+/* Theme hook classes for customization */
+.infobox-accent { /* Can be styled by themes for accent elements */ }
+.infobox-highlight { /* Can be styled by themes for highlighted content */ }
+.infobox-muted { /* Can be styled by themes for de-emphasized content */ }
