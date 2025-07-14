@@ -119,6 +119,7 @@ Syntax Reference
 * Header banner: header_image = banner.jpg
 * Section: == Section Name ==
 * Collapsed section: === Section Name ===
+* Subgroups: ::: Group Name :::
 * Custom CSS: class = custom-style
 * Lists in values: Use wiki list syntax
 
