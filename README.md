@@ -38,6 +38,19 @@ Field 2 = Text 2
 }}
 ```
 
+Header Image
+------------
+Add a full-width banner image at the top of the infobox that spans the entire width:
+```markdown
+{{infobox>
+header_image = banner.jpg
+name = Character Name
+image = portrait.jpg
+Field 1 = Text 1
+Field 2 = Text 2
+}}
+```
+
 Multiple Images
 ---------------
 ```markdown
