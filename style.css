@@ -198,6 +198,19 @@
     width: 40%;
 }
 
+/* Icons in field names */
+.infobox-table th img,
+.infobox-field-icon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
+    height: 1.2em;
+    width: auto;
+    border: none;
+    box-shadow: none;
+    background: none;
+}
+
 /* Section headers */
 .infobox-section {
     margin-top: 0;

@@ -285,7 +285,7 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
             $renderer->doc .= '<table class="infobox-table">';
             foreach ($data['fields'] as $key => $value) {
                 $renderer->doc .= '<tr>';
-                $renderer->doc .= '<th>' . hsc($this->_formatKey($key)) . '</th>';
+                $renderer->doc .= '<th>' . $this->_renderFieldName($key) . '</th>';
                 $renderer->doc .= '<td>' . $this->_parseWikiText($value) . '</td>';
                 $renderer->doc .= '</tr>';
             }
@@ -328,7 +328,7 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                         $renderer->doc .= '<table class="infobox-table">';
                         foreach ($subgroupFields as $key => $value) {
                             $renderer->doc .= '<tr>';
-                            $renderer->doc .= '<th>' . hsc($this->_formatKey($key)) . '</th>';
+                            $renderer->doc .= '<th>' . $this->_renderFieldName($key) . '</th>';
                             $renderer->doc .= '<td>' . $this->_parseWikiText($value) . '</td>';
                             $renderer->doc .= '</tr>';
                         }
@@ -348,7 +348,7 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                 $renderer->doc .= '<table class="infobox-table">';
                 foreach ($regularFields as $key => $value) {
                     $renderer->doc .= '<tr>';
-                    $renderer->doc .= '<th>' . hsc($this->_formatKey($key)) . '</th>';
+                    $renderer->doc .= '<th>' . $this->_renderFieldName($key) . '</th>';
                     $renderer->doc .= '<td>' . $this->_parseWikiText($value) . '</td>';
                     $renderer->doc .= '</tr>';
                 }
@@ -496,5 +496,36 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
     private function _formatKey($key) {
         // Convert underscores to spaces and capitalize words
         return ucwords(str_replace('_', ' ', $key));
+    }
+    
+    private function _renderFieldName($key) {
+        // Handle pipe syntax for icons: "icon.png|Field Name"
+        if (strpos($key, '|') !== false && preg_match('/^([^|]+)\|(.+)$/', $key, $matches)) {
+            $iconFile = trim($matches[1]);
+            $label = trim($matches[2]);
+            
+            // Check if the first part looks like an image file
+            if (preg_match('/\.(png|jpg|jpeg|gif|svg)$/i', $iconFile)) {
+                // Use DokuWiki's media resolution instead of manual path construction
+                global $conf;
+                
+                // Try to resolve the media file using DokuWiki's functions
+                $mediaFile = cleanID($iconFile);
+                $file = mediaFN($mediaFile);
+                
+                if (file_exists($file)) {
+                    // File exists, use DokuWiki's media URL
+                    $iconHtml = '<img src="' . ml($mediaFile) . '" alt="" class="infobox-field-icon" />';
+                } else {
+                    // Fallback: try as direct media reference with debugging
+                    $iconHtml = '<img src="' . DOKU_URL . 'data/media/' . hsc($iconFile) . '" alt="[' . hsc($iconFile) . ']" class="infobox-field-icon" title="Icon: ' . hsc($iconFile) . '" />';
+                }
+                
+                return $iconHtml . hsc($this->_formatKey($label));
+            }
+        }
+        
+        // No icons, just format normally
+        return hsc($this->_formatKey($key));
     }
 }

@@ -2,7 +2,7 @@
 
 A flexible infobox plugin for DokuWiki that creates structured information boxes for any type of content.
 
-![Example Image](https://github.com/user-attachments/assets/bf87a183-5810-4cd2-80fb-2c56d8eae090)
+![Example Image](https://github.com/user-attachments/assets/83fb9a05-6d49-4ac1-92c2-f2759365c13b)
 
 Features
 --------
@@ -121,7 +121,7 @@ Syntax Reference
 * Collapsed section: `=== Section Name ===`
 * Subgroups: `::: Group Name :::`
 * Custom CSS: class = `custom-style`
-* Icons in field names: `{{icon.png}} Field Name = Value`
+* Icons in field names: `icon.png|Field Name = Value`
 * Lists in values: Use wiki list syntax
 
 Image Tab Customization
