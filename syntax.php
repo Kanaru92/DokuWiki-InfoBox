@@ -45,7 +45,6 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                 
                 $currentSection = null;
                 $currentSubgroup = null;
-                $imageIndex = 0;
                 $currentKey = null;
                 $currentValue = '';
                 
@@ -92,8 +91,33 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                         continue;
                     }
                     
+                    // Check for divider lines
+                    if (preg_match('/^divider\s*=\s*(.+)$/i', $trimmedLine, $matches)) {
+                        $dividerText = trim($matches[1]);
+                        if ($currentSection !== null) {
+                            if ($currentSubgroup !== null) {
+                                // Add divider to subgroup
+                                $params['sections'][$currentSection]['_subgroups'][$currentSubgroup]['_divider_' . md5($dividerText)] = [
+                                    'type' => 'divider',
+                                    'text' => $dividerText
+                                ];
+                            } else {
+                                // Add divider to section
+                                $params['sections'][$currentSection]['_divider_' . md5($dividerText)] = [
+                                    'type' => 'divider', 
+                                    'text' => $dividerText
+                                ];
+                            }
+                        } else {
+                            // Add divider to main fields
+                            $params['fields']['_divider_' . md5($dividerText)] = [
+                                'type' => 'divider',
+                                'text' => $dividerText
+                            ];
+                        }
+                    } 
                     // Check if this line contains a key=value pair
-                    if (strpos($trimmedLine, '=') !== false) {
+                    elseif (strpos($trimmedLine, '=') !== false) {
                         // Split only on the first = to handle values containing =
                         $pos = strpos($trimmedLine, '=');
                         $key = trim(substr($trimmedLine, 0, $pos));
@@ -134,6 +158,23 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
             return;
         }
         
+        // Handle spoiler/blur functionality with ! prefix
+        $blurKey = false;
+        $blurValue = false;
+        
+        // Check for ! in key (e.g., !name = david)
+        if (strpos($key, '!') === 0) {
+            $blurKey = true;
+            $blurValue = true;
+            $key = ltrim($key, '!');
+        }
+        
+        // Check for ! in value (e.g., name = !david)  
+        if (strpos($value, '!') === 0) {
+            $blurValue = true;
+            $value = ltrim($value, '!');
+        }
+        
         // Handle image fields
         if (preg_match('/^image(\d*)$/', $key, $matches)) {
             $imgNum = $matches[1] ?: '1';
@@ -161,14 +202,26 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
             if ($currentSection !== null) {
                 if ($currentSubgroup !== null) {
                     // Add to subgroup
-                    $params['sections'][$currentSection]['_subgroups'][$currentSubgroup][$key] = $value;
+                    $params['sections'][$currentSection]['_subgroups'][$currentSubgroup][$key] = [
+                        'value' => $value,
+                        'blur_key' => $blurKey,
+                        'blur_value' => $blurValue
+                    ];
                 } else {
                     // Add to section (not in a subgroup)
-                    $params['sections'][$currentSection][$key] = $value;
+                    $params['sections'][$currentSection][$key] = [
+                        'value' => $value,
+                        'blur_key' => $blurKey,
+                        'blur_value' => $blurValue
+                    ];
                 }
             } else {
                 // Add to main fields
-                $params['fields'][$key] = $value;
+                $params['fields'][$key] = [
+                    'value' => $value,
+                    'blur_key' => $blurKey,
+                    'blur_value' => $blurValue
+                ];
             }
         }
     }
@@ -283,10 +336,30 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
         // Main fields table
         if (!empty($data['fields'])) {
             $renderer->doc .= '<table class="infobox-table">';
-            foreach ($data['fields'] as $key => $value) {
+            foreach ($data['fields'] as $key => $fieldData) {
+                // Handle dividers
+                if (is_array($fieldData) && isset($fieldData['type']) && $fieldData['type'] === 'divider') {
+                    $renderer->doc .= '</table><div class="infobox-divider">' . hsc($fieldData['text']) . '</div><table class="infobox-table">';
+                    continue;
+                }
+                
+                // Handle both old string format and new array format for backwards compatibility
+                if (is_array($fieldData)) {
+                    $value = $fieldData['value'];
+                    $blurKey = $fieldData['blur_key'];
+                    $blurValue = $fieldData['blur_value'];
+                } else {
+                    $value = $fieldData;
+                    $blurKey = false;
+                    $blurValue = false;
+                }
+                
+                $keyClass = $blurKey ? ' class="infobox-spoiler"' : '';
+                $valueClass = $blurValue ? ' class="infobox-spoiler"' : '';
+                
                 $renderer->doc .= '<tr>';
-                $renderer->doc .= '<th>' . $this->_renderFieldName($key) . '</th>';
-                $renderer->doc .= '<td>' . $this->_parseWikiText($value) . '</td>';
+                $renderer->doc .= '<th' . $keyClass . '>' . $this->_renderFieldName($key) . '</th>';
+                $renderer->doc .= '<td' . $valueClass . '>' . $this->_parseWikiText($value) . '</td>';
                 $renderer->doc .= '</tr>';
             }
             $renderer->doc .= '</table>';
@@ -326,10 +399,30 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                     
                     if (!empty($subgroupFields)) {
                         $renderer->doc .= '<table class="infobox-table">';
-                        foreach ($subgroupFields as $key => $value) {
+                        foreach ($subgroupFields as $key => $fieldData) {
+                            // Handle dividers
+                            if (is_array($fieldData) && isset($fieldData['type']) && $fieldData['type'] === 'divider') {
+                                $renderer->doc .= '</table><div class="infobox-divider">' . hsc($fieldData['text']) . '</div><table class="infobox-table">';
+                                continue;
+                            }
+                            
+                            // Handle both old string format and new array format for backwards compatibility
+                            if (is_array($fieldData)) {
+                                $value = $fieldData['value'];
+                                $blurKey = $fieldData['blur_key'];
+                                $blurValue = $fieldData['blur_value'];
+                            } else {
+                                $value = $fieldData;
+                                $blurKey = false;
+                                $blurValue = false;
+                            }
+                            
+                            $keyClass = $blurKey ? ' class="infobox-spoiler"' : '';
+                            $valueClass = $blurValue ? ' class="infobox-spoiler"' : '';
+                            
                             $renderer->doc .= '<tr>';
-                            $renderer->doc .= '<th>' . $this->_renderFieldName($key) . '</th>';
-                            $renderer->doc .= '<td>' . $this->_parseWikiText($value) . '</td>';
+                            $renderer->doc .= '<th' . $keyClass . '>' . $this->_renderFieldName($key) . '</th>';
+                            $renderer->doc .= '<td' . $valueClass . '>' . $this->_parseWikiText($value) . '</td>';
                             $renderer->doc .= '</tr>';
                         }
                         $renderer->doc .= '</table>';
@@ -346,10 +439,30 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
             
             if (!empty($regularFields)) {
                 $renderer->doc .= '<table class="infobox-table">';
-                foreach ($regularFields as $key => $value) {
+                foreach ($regularFields as $key => $fieldData) {
+                    // Handle dividers
+                    if (is_array($fieldData) && isset($fieldData['type']) && $fieldData['type'] === 'divider') {
+                        $renderer->doc .= '</table><div class="infobox-divider">' . hsc($fieldData['text']) . '</div><table class="infobox-table">';
+                        continue;
+                    }
+                    
+                    // Handle both old string format and new array format for backwards compatibility
+                    if (is_array($fieldData)) {
+                        $value = $fieldData['value'];
+                        $blurKey = $fieldData['blur_key'];
+                        $blurValue = $fieldData['blur_value'];
+                    } else {
+                        $value = $fieldData;
+                        $blurKey = false;
+                        $blurValue = false;
+                    }
+                    
+                    $keyClass = $blurKey ? ' class="infobox-spoiler"' : '';
+                    $valueClass = $blurValue ? ' class="infobox-spoiler"' : '';
+                    
                     $renderer->doc .= '<tr>';
-                    $renderer->doc .= '<th>' . $this->_renderFieldName($key) . '</th>';
-                    $renderer->doc .= '<td>' . $this->_parseWikiText($value) . '</td>';
+                    $renderer->doc .= '<th' . $keyClass . '>' . $this->_renderFieldName($key) . '</th>';
+                    $renderer->doc .= '<td' . $valueClass . '>' . $this->_parseWikiText($value) . '</td>';
                     $renderer->doc .= '</tr>';
                 }
                 $renderer->doc .= '</table>';
@@ -365,6 +478,13 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
         static $jsAdded = false;
         if (!$jsAdded) {
             $renderer->doc .= '<script>
+            // Spoiler click-to-reveal functionality
+            function revealSpoiler(element) {
+                element.classList.add("revealed");
+                element.removeAttribute("tabindex");
+                element.setAttribute("aria-label", "Content revealed");
+            }
+            
             function showInfoboxImage(boxId, imageNum) {
                 // Hide all images in this infobox
                 var containers = document.querySelectorAll("#" + boxId + " .infobox-image-container");
@@ -408,6 +528,27 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
             
             // Add keyboard support
             document.addEventListener("DOMContentLoaded", function() {
+                // Initialize spoiler elements
+                var spoilers = document.querySelectorAll(".infobox-spoiler");
+                spoilers.forEach(function(spoiler) {
+                    spoiler.setAttribute("tabindex", "0");
+                    spoiler.setAttribute("role", "button");
+                    spoiler.setAttribute("aria-label", "Blurred content - click or press Enter to reveal");
+                    
+                    spoiler.addEventListener("click", function() {
+                        if (!this.classList.contains("revealed")) {
+                            revealSpoiler(this);
+                        }
+                    });
+                    
+                    spoiler.addEventListener("keydown", function(e) {
+                        if ((e.key === "Enter" || e.key === " ") && !this.classList.contains("revealed")) {
+                            e.preventDefault();
+                            revealSpoiler(this);
+                        }
+                    });
+                });
+                
                 // Keyboard navigation for image tabs
                 var tabGroups = document.querySelectorAll(".infobox-image-tabs");
                 tabGroups.forEach(function(tabGroup) {

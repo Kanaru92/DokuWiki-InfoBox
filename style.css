@@ -17,6 +17,20 @@
     background: inherit;
 }
 
+/* Avoid collision with TOC in templates like Minimal */
+.dokuwiki .toc ~ * .infobox,
+.has-toc .infobox {
+    margin-right: 200px; /* Reserve space for TOC */
+}
+
+/* Alternative: Move to left side when TOC present */
+.dokuwiki .toc ~ * .infobox.avoid-toc,
+.has-toc .infobox.avoid-toc {
+    float: left;
+    margin: 0 1em 1em 0;
+    margin-right: 0;
+}
+
 /* Fix for section header lines - create BFC (Block Formatting Context) */
 .dokuwiki .page:has(.infobox) h1,
 .dokuwiki .page:has(.infobox) h2,
@@ -468,6 +482,41 @@
     .dokuwiki h5:not(.nobreak) {
         overflow: hidden;
     }
+}
+
+/* Spoiler/blur functionality */
+.infobox-spoiler {
+    filter: blur(4px);
+    transition: filter 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.infobox-spoiler:hover {
+    filter: blur(0px);
+}
+
+.infobox-spoiler:focus {
+    filter: blur(0px);
+    outline: 2px solid;
+}
+
+/* Click to reveal spoilers permanently */
+.infobox-spoiler.revealed {
+    filter: blur(0px);
+    cursor: default;
+}
+
+/* Divider styling */
+.infobox-divider {
+    text-align: center;
+    font-weight: bold;
+    padding: 8px 10px;
+    margin: 5px 0;
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    background: rgba(128, 128, 128, 0.05);
+    font-size: 95%;
 }
 
 /* Theme hook classes for customization */

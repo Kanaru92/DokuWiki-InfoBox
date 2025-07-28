@@ -2,12 +2,14 @@
 
 A flexible infobox plugin for DokuWiki that creates structured information boxes for any type of content.
 
-![Example Image](https://github.com/user-attachments/assets/83fb9a05-6d49-4ac1-92c2-f2759365c13b)
+![Example Image](https://github.com/user-attachments/assets/7fc33a7c-541c-4a40-938b-7c3e462630c3)
 
 Features
 --------
 * Multiple images with tab navigation
 * Section headers with optional collapsible sections
+* Spoiler/blur functionality for sensitive content
+* Divider lines for visual organization
 * Automatically matches your DokuWiki theme
 * Click images to view fullscreen
 * Full wiki syntax support
@@ -120,7 +122,58 @@ Info 1 = [[Info 1]]
 Info 2 = [[Info 1]]
 Info 3 = [[Info 1]]
 }}
+```
 
+Spoiler/Blur Content
+--------------------
+Use `!` prefix to blur sensitive content that can be revealed on hover or click:
+```markdown
+{{infobox>
+name = Character Name
+!secret_identity = !Bruce Wayne
+real_name = !Clark Kent
+image = character.jpg
+
+== Personal Info ==
+age = 30
+!trauma = !Parents were murdered
+occupation = Journalist
+}}
+```
+
+**Spoiler Options:**
+* `!key = value` - Blurs both the field name and value
+* `key = !value` - Blurs only the field value
+* **Interaction:** Hover to preview, click/Enter to permanently reveal
+* **Accessibility:** Full keyboard navigation and screen reader support
+
+Divider Lines
+-------------
+Add visual separators within your infobox using divider lines:
+```markdown
+{{infobox>
+name = Character Name
+image = character.jpg
+real_name = Bruce Wayne
+age = 30
+
+divider = Background
+origin = Gotham City
+parents = Thomas and Martha Wayne
+
+divider = Abilities
+fighting = Expert
+detective = Master
+wealth = Billionaire
+
+== Equipment ==
+divider = Vehicles
+car = Batmobile
+plane = Batwing
+
+divider = Gadgets
+utility_belt = Various tools
+grappling_gun = For mobility
 }}
 ```
 
@@ -133,7 +186,9 @@ Syntax Reference
 * Section: `== Section Name ==`
 * Collapsed section: `=== Section Name ===`
 * Subgroups: `::: Group Name :::`
-* Custom CSS: class = `custom-style`
+* Divider lines: `divider = Text`
+* Spoiler content: `!key = value` or `key = !value`
+* Custom CSS: `class = custom-style`
 * Icons in field names: `icon.png|Field Name = Value`
 * Lists in values: Use wiki list syntax
 
