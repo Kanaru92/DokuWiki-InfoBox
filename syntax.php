@@ -47,6 +47,7 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                 $currentSubgroup = null;
                 $currentKey = null;
                 $currentValue = '';
+                $headerlessCounter = 0;
                 
                 foreach ($lines as $line) {
                     // Don't trim the line yet - we need to preserve indentation for multi-line values
@@ -68,6 +69,15 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                     $trimmedLine = trim($line);
                     if (empty($trimmedLine)) continue;
                     
+                    // Check for headerless section (====)
+                    if ($trimmedLine === '====') {
+                        $headerlessCounter++;
+                        $currentSection = '_headerless_' . $headerlessCounter;
+                        $currentSubgroup = null;
+                        $params['sections'][$currentSection] = [];
+                        continue;
+                    }
+
                     // Check for section headers
                     if (preg_match('/^(={2,3})\s*(.+?)\s*\1$/', $trimmedLine, $sectionMatches)) {
                         $currentSection = $sectionMatches[2];
@@ -79,6 +89,19 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                         continue;
                     }
                     
+                    // Check for headerless subgroup (::::::)
+                    if ($trimmedLine === '::::::') {
+                        if ($currentSection !== null) {
+                            $headerlessCounter++;
+                            $currentSubgroup = '_headerless_' . $headerlessCounter;
+                            if (!isset($params['sections'][$currentSection]['_subgroups'])) {
+                                $params['sections'][$currentSection]['_subgroups'] = [];
+                            }
+                            $params['sections'][$currentSection]['_subgroups'][$currentSubgroup] = [];
+                        }
+                        continue;
+                    }
+
                     // Check for subgroup headers (:::)
                     if (preg_match('/^:::\s*(.+?)\s*:::$/', $trimmedLine, $subgroupMatches)) {
                         if ($currentSection !== null) {
@@ -115,7 +138,25 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                                 'text' => $dividerText
                             ];
                         }
-                    } 
+                    }
+                    // Check for full-width value (= value =)
+                    elseif (preg_match('/^=\s+(.+?)\s+=$/', $trimmedLine, $fullwidthMatches)) {
+                        $fullwidthValue = $fullwidthMatches[1];
+                        $fullwidthKey = '_fullwidth_' . md5($fullwidthValue . microtime());
+                        $fieldData = [
+                            'type' => 'fullwidth',
+                            'value' => $fullwidthValue
+                        ];
+                        if ($currentSection !== null) {
+                            if ($currentSubgroup !== null) {
+                                $params['sections'][$currentSection]['_subgroups'][$currentSubgroup][$fullwidthKey] = $fieldData;
+                            } else {
+                                $params['sections'][$currentSection][$fullwidthKey] = $fieldData;
+                            }
+                        } else {
+                            $params['fields'][$fullwidthKey] = $fieldData;
+                        }
+                    }
                     // Check if this line contains a key=value pair
                     elseif (strpos($trimmedLine, '=') !== false) {
                         // Split only on the first = to handle values containing =
@@ -342,21 +383,27 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                     $renderer->doc .= '</table><div class="infobox-divider">' . hsc($fieldData['text']) . '</div><table class="infobox-table">';
                     continue;
                 }
-                
+
+                // Handle full-width values
+                if (is_array($fieldData) && isset($fieldData['type']) && $fieldData['type'] === 'fullwidth') {
+                    $renderer->doc .= '<tr><td colspan="2" class="infobox-fullwidth">' . $this->_parseWikiText($fieldData['value']) . '</td></tr>';
+                    continue;
+                }
+
                 // Handle both old string format and new array format for backwards compatibility
                 if (is_array($fieldData)) {
                     $value = $fieldData['value'];
-                    $blurKey = $fieldData['blur_key'];
-                    $blurValue = $fieldData['blur_value'];
+                    $blurKey = isset($fieldData['blur_key']) ? $fieldData['blur_key'] : false;
+                    $blurValue = isset($fieldData['blur_value']) ? $fieldData['blur_value'] : false;
                 } else {
                     $value = $fieldData;
                     $blurKey = false;
                     $blurValue = false;
                 }
-                
+
                 $keyClass = $blurKey ? ' class="infobox-spoiler"' : '';
                 $valueClass = $blurValue ? ' class="infobox-spoiler"' : '';
-                
+
                 $renderer->doc .= '<tr>';
                 $renderer->doc .= '<th' . $keyClass . '>' . $this->_renderFieldName($key) . '</th>';
                 $renderer->doc .= '<td' . $valueClass . '>' . $this->_parseWikiText($value) . '</td>';
@@ -369,20 +416,26 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
         foreach ($data['sections'] as $sectionName => $sectionData) {
             $sectionId = $boxId . '_section_' . md5($sectionName);
             $isCollapsed = isset($data['collapsed_sections'][$sectionName]);
+            $isHeaderless = strpos($sectionName, '_headerless_') === 0;
             $collapsibleClass = $isCollapsed ? ' collapsible collapsed' : '';
-            
-            $renderer->doc .= '<div class="infobox-section' . $collapsibleClass . '">';
-            if ($isCollapsed) {
-                $renderer->doc .= '<div class="infobox-section-header" onclick="toggleInfoboxSection(\'' . $sectionId . '\')" ' . 
-                                 'role="button" tabindex="0" aria-expanded="false" aria-controls="' . $sectionId . '">';
-            } else {
-                $renderer->doc .= '<div class="infobox-section-header">';
+            $headerlessClass = $isHeaderless ? ' headerless' : '';
+
+            $renderer->doc .= '<div class="infobox-section' . $collapsibleClass . $headerlessClass . '">';
+
+            // Only render section header if not headerless
+            if (!$isHeaderless) {
+                if ($isCollapsed) {
+                    $renderer->doc .= '<div class="infobox-section-header" onclick="toggleInfoboxSection(\'' . $sectionId . '\')" ' .
+                                     'role="button" tabindex="0" aria-expanded="false" aria-controls="' . $sectionId . '">';
+                } else {
+                    $renderer->doc .= '<div class="infobox-section-header">';
+                }
+                $renderer->doc .= hsc($sectionName);
+                if ($isCollapsed) {
+                    $renderer->doc .= '<span class="infobox-section-toggle">▼</span>';
+                }
+                $renderer->doc .= '</div>';
             }
-            $renderer->doc .= hsc($sectionName);
-            if ($isCollapsed) {
-                $renderer->doc .= '<span class="infobox-section-toggle">▼</span>';
-            }
-            $renderer->doc .= '</div>';
             
             $contentClass = $isCollapsed ? 'infobox-section-content collapsed' : 'infobox-section-content';
             $renderer->doc .= '<div class="' . $contentClass . '" id="' . $sectionId . '">';
@@ -394,8 +447,12 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                 // Render subgroups
                 $renderer->doc .= '<div class="infobox-subgroups">';
                 foreach ($sectionData['_subgroups'] as $subgroupName => $subgroupFields) {
-                    $renderer->doc .= '<div class="infobox-subgroup">';
-                    $renderer->doc .= '<div class="infobox-subgroup-header">' . hsc($subgroupName) . '</div>';
+                    $isSubgroupHeaderless = strpos($subgroupName, '_headerless_') === 0;
+                    $subgroupClass = $isSubgroupHeaderless ? 'infobox-subgroup headerless' : 'infobox-subgroup';
+                    $renderer->doc .= '<div class="' . $subgroupClass . '">';
+                    if (!$isSubgroupHeaderless) {
+                        $renderer->doc .= '<div class="infobox-subgroup-header">' . hsc($subgroupName) . '</div>';
+                    }
                     
                     if (!empty($subgroupFields)) {
                         $renderer->doc .= '<table class="infobox-table">';
@@ -405,21 +462,27 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                                 $renderer->doc .= '</table><div class="infobox-divider">' . hsc($fieldData['text']) . '</div><table class="infobox-table">';
                                 continue;
                             }
-                            
+
+                            // Handle full-width values (spans column width in subgroups)
+                            if (is_array($fieldData) && isset($fieldData['type']) && $fieldData['type'] === 'fullwidth') {
+                                $renderer->doc .= '<tr><td colspan="2" class="infobox-fullwidth">' . $this->_parseWikiText($fieldData['value']) . '</td></tr>';
+                                continue;
+                            }
+
                             // Handle both old string format and new array format for backwards compatibility
                             if (is_array($fieldData)) {
                                 $value = $fieldData['value'];
-                                $blurKey = $fieldData['blur_key'];
-                                $blurValue = $fieldData['blur_value'];
+                                $blurKey = isset($fieldData['blur_key']) ? $fieldData['blur_key'] : false;
+                                $blurValue = isset($fieldData['blur_value']) ? $fieldData['blur_value'] : false;
                             } else {
                                 $value = $fieldData;
                                 $blurKey = false;
                                 $blurValue = false;
                             }
-                            
+
                             $keyClass = $blurKey ? ' class="infobox-spoiler"' : '';
                             $valueClass = $blurValue ? ' class="infobox-spoiler"' : '';
-                            
+
                             $renderer->doc .= '<tr>';
                             $renderer->doc .= '<th' . $keyClass . '>' . $this->_renderFieldName($key) . '</th>';
                             $renderer->doc .= '<td' . $valueClass . '>' . $this->_parseWikiText($value) . '</td>';
@@ -445,21 +508,27 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
                         $renderer->doc .= '</table><div class="infobox-divider">' . hsc($fieldData['text']) . '</div><table class="infobox-table">';
                         continue;
                     }
-                    
+
+                    // Handle full-width values
+                    if (is_array($fieldData) && isset($fieldData['type']) && $fieldData['type'] === 'fullwidth') {
+                        $renderer->doc .= '<tr><td colspan="2" class="infobox-fullwidth">' . $this->_parseWikiText($fieldData['value']) . '</td></tr>';
+                        continue;
+                    }
+
                     // Handle both old string format and new array format for backwards compatibility
                     if (is_array($fieldData)) {
                         $value = $fieldData['value'];
-                        $blurKey = $fieldData['blur_key'];
-                        $blurValue = $fieldData['blur_value'];
+                        $blurKey = isset($fieldData['blur_key']) ? $fieldData['blur_key'] : false;
+                        $blurValue = isset($fieldData['blur_value']) ? $fieldData['blur_value'] : false;
                     } else {
                         $value = $fieldData;
                         $blurKey = false;
                         $blurValue = false;
                     }
-                    
+
                     $keyClass = $blurKey ? ' class="infobox-spoiler"' : '';
                     $valueClass = $blurValue ? ' class="infobox-spoiler"' : '';
-                    
+
                     $renderer->doc .= '<tr>';
                     $renderer->doc .= '<th' . $keyClass . '>' . $this->_renderFieldName($key) . '</th>';
                     $renderer->doc .= '<td' . $valueClass . '>' . $this->_parseWikiText($value) . '</td>';

@@ -124,6 +124,43 @@ Info 3 = [[Info 1]]
 }}
 ```
 
+Headerless Sections and Columns
+------------------
+Use `====` for sections without headers and `::::::` for columns without headers:
+```markdown
+{{infobox>
+name = Name
+image = example.jpg
+
+====
+::::::
+Info 1 = [[Info 1]]
+Info 2 = [[Info 2]]
+
+::::::
+Info 3 = [[Info 3]]
+Info 4 = [[Info 4]]
+Info 5 = [[Info 5]]
+}}
+```
+
+Full-Width Values
+------------------
+Use `= value =` to create a row that spans both columns:
+```markdown
+{{infobox>
+name = Character
+image = photo.jpg
+Class = Warrior
+Level = 50
+
+== Stats ==
+= [[View Full Stats]] =
+Health = 1000
+Mana = 500
+}}
+```
+
 Spoiler/Blur Content
 --------------------
 Use `!` prefix to blur sensitive content that can be revealed on hover or click:
@@ -185,7 +222,10 @@ Syntax Reference
 * Header banner: `header_image = banner.jpg`
 * Section: `== Section Name ==`
 * Collapsed section: `=== Section Name ===`
+* Headerless section: `====`
 * Subgroups: `::: Group Name :::`
+* Headerless subgroup: `::::::`
+* Full-width value: `= value =`
 * Divider lines: `divider = Text`
 * Spoiler content: `!key = value` or `key = !value`
 * Custom CSS: `class = custom-style`

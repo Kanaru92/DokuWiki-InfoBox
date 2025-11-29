@@ -1,5 +1,10 @@
 /* DokuWiki Infobox Plugin - Theme-agnostic styles */
 
+/* Tailwind template compatibility - ensures floats work in flex containers */
+.dokuwiki-main {
+    display: block;
+}
+
 /* Main container */
 .infobox {
     border: 1px solid;
@@ -523,3 +528,28 @@
 .infobox-accent { /* Can be styled by themes for accent elements */ }
 .infobox-highlight { /* Can be styled by themes for highlighted content */ }
 .infobox-muted { /* Can be styled by themes for de-emphasized content */ }
+
+/* Full-width value rows */
+.infobox-fullwidth {
+    text-align: center;
+    padding: 8px 10px;
+}
+
+/* Headerless sections */
+.infobox-section.headerless {
+    margin-top: 0;
+}
+
+.infobox-section.headerless > .infobox-section-content {
+    /* No header means content starts immediately */
+}
+
+/* Headerless subgroups */
+.infobox-subgroup.headerless .infobox-table {
+    /* No header padding adjustment needed */
+}
+
+.infobox-subgroup.headerless:first-child .infobox-table tr:first-child th,
+.infobox-subgroup.headerless:first-child .infobox-table tr:first-child td {
+    padding-top: 6px;
+}
