@@ -1,6 +1,6 @@
 base   infobox
 author Kanaru
-date   2024-08-04
+date   2025-11-29
 name   Infobox Plugin
 desc   Adds an infobox to DokuWiki pages.
 url    https://github.com/Kanaru92/DokuWiki-InfoBox/
