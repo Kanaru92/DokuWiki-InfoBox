@@ -24,7 +24,14 @@ class syntax_plugin_infobox extends DokuWiki_Syntax_Plugin {
     }
     
     public function postConnect() {
-        $this->Lexer->addExitPattern('\}\}', 'plugin_infobox');
+        // Only treat a }} that sits on its own line (optionally indented) as the
+        // closing delimiter. The lexer matches the FIRST occurrence of the exit
+        // pattern, so a bare '\}\}' would let any inline plugin syntax in a field
+        // value - e.g. {{ruby|kanji|kana}}, {{$struct.field}} or {{gallery>ns}} -
+        // prematurely close the infobox. Anchoring to line start (^ under the
+        // lexer's multiline flag) keeps those inline }} intact while still
+        // matching the conventional closing }} on its own line.
+        $this->Lexer->addExitPattern('^[ \t]*\}\}', 'plugin_infobox');
     }
 
     public function handle($match, $state, $pos, Doku_Handler $handler) {

@@ -89,6 +89,23 @@ Field 2 = Text 2
 }}
 ```
 
+Inline Plugin Syntax (Struct, Ruby, Gallery, etc.)
+------------------
+Field values may contain other plugins' `{{...}}` syntax. The closing `}}` of the
+infobox must be on its **own line** (as in every example here); only a `}}` at the
+start of a line closes the box, so inline `}}` inside a value is left untouched.
+
+```markdown
+{{infobox>
+name = {{$project.name}}
+status = {{$project.status}}
+reading = {{ruby|車|くるま}}
+}}
+```
+
+This means the [ruby plugin](https://www.dokuwiki.org/plugin:ruby) works directly —
+there's no need for the `htmlok` plugin or raw `<html>` to annotate text.
+
 With Struct Plugin
 ------------------
 ```markdown
